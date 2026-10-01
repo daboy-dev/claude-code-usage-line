@@ -35,6 +35,7 @@ function engine(on: any, usage: { rateLimits: Limits; cost?: { usd: number } }) 
   on('session.usage', () => ({ value: { startedAt: STARTED, context: CONTEXT, ...usage } }))
   on('session.measure', ($: unknown, e: { changed: string[] }) => ({ changed: e.changed }))
   on('classic.SessionStart', () => ({}))
+  on('turn.complete', () => ({ text: '' }))
   on('ui.render', engineBand)
   return clock
 }
@@ -56,6 +57,11 @@ function textOf(node: any): string {
   return (node.children ?? []).map(textOf).join('')
 }
 
+// The text of the line this mod drew, without what the engine drew beside it.
+async function lineOf(ui: { find: (q: { type: 'Box' }) => Promise<unknown> }): Promise<string> {
+  return textOf(await ui.find({ type: 'Box' })).replace('drawn by Claude Code', '')
+}
+
 describe('the band', () => {
   test('both windows draw one line, after what other mods draw', async ($, on) => {
     engine(on, {
@@ -70,7 +76,7 @@ describe('the band', () => {
       const engineLine = await ui.find({ type: 'Text', text: 'drawn by Claude Code' })
       expect(engineLine).toBeDefined()
       const root = await ui.find({ type: 'Box' })
-      expect(textOf(root)).toBe('drawn by Claude Code5h 23% (2h14m) · 7d 41%')
+      expect(textOf(root)).toBe('drawn by Claude CodeSession ▰▰▱▱▱▱▱▱▱▱ 23% · resets in 2h14m     Week ▰▰▰▰▱▱▱▱▱▱ 41%')
       await ui.unmount()
     }
   })
@@ -83,11 +89,29 @@ describe('the band', () => {
     expect(await ui.find({ type: 'Text', text: 'drawn by Claude Code' })).toBeDefined()
   })
 
-  test('no rate limits falls back to the session cost', async ($, on) => {
+  test('no rate limits after a reply falls back to the session cost', async ($, on) => {
     engine(on, { rateLimits: [], cost: { usd: 0.12 } })
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    expect(await ui.find({ type: 'Text', text: '$0.12' })).toBeDefined()
+    await $.turn.complete({ turnId: 't1', answer: 'ok', durationMs: 1000, isAborted: false, reason: 'answer' })
+    expect(await lineOf(ui)).toBe('Session cost $0.12')
+  })
+
+  test('a reopened session with an old cost shows nothing until a reply finishes', async ($, on) => {
+    engine(on, { rateLimits: [], cost: { usd: 4.2 } })
+    await $.session.start({ surface: 'desktop', isInteractive: true, cwd: '/work' })
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    expect(await lineOf(ui)).toBe('')
+
+    // A subscriber's first reply brings the plan figures: no cost line at all.
+    await $.session.measure({
+      context: CONTEXT,
+      rateLimits: [{ kind: 'five_hour', percentUsed: 4, resetsAt: at(4 * HOUR) }],
+      cost: { usd: 4.3 },
+      changed: ['rateLimits', 'cost'],
+    })
+    await $.turn.complete({ turnId: 't1', answer: 'ok', durationMs: 1000, isAborted: false, reason: 'answer' })
+    expect(await lineOf(ui)).toBe('Session ▰▱▱▱▱▱▱▱▱▱  4% · resets in 4h00m')
   })
 
   test('session.measure replaces the figures', async ($, on) => {
@@ -102,9 +126,10 @@ describe('the band', () => {
       cost: { usd: 1 },
       changed: ['rateLimits', 'cost'],
     })
-    const hot = runOf(await ui.find({ type: 'Box' }), '5h 91% (37m)')
-    expect(hot).toBeDefined()
-    expect(hot?.props).toEqual({ color: 'error' })
+    expect(await lineOf(ui)).toBe('Session ▰▰▰▰▰▰▰▰▰▱ 91% · resets in 37m')
+    const root = await ui.find({ type: 'Box' })
+    expect(runOf(root, '▰▰▰▰▰▰▰▰▰')?.props).toEqual({ color: 'error' })
+    expect(runOf(root, '91%')?.props).toEqual({ color: 'error' })
   })
 
   test('threshold colors: dim, warning, error', async ($, on) => {
@@ -118,16 +143,35 @@ describe('the band', () => {
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
     const root = await ui.find({ type: 'Box' })
-    expect(runOf(root, '5h 69%')?.props).toEqual({ dimColor: true })
-    expect(runOf(root, '7d 70%')?.props).toEqual({ color: 'warning' })
-    expect(runOf(root, 'spend 90%')?.props).toEqual({ color: 'error' })
+    expect(runOf(root, '69%')).toBeDefined()
+    expect(runOf(root, '69%')?.props?.color).toBeUndefined()
+    expect(runOf(root, '69%')?.props?.dimColor).toBeUndefined()
+    expect(runOf(root, '70%')?.props).toEqual({ color: 'warning' })
+    expect(runOf(root, '90%')?.props).toEqual({ color: 'error' })
+    expect(runOf(root, 'Session ')?.props).toEqual({ dimColor: true })
+  })
+
+  test('a narrow band gets the shorter layouts', async ($, on) => {
+    engine(on, {
+      rateLimits: [
+        { kind: 'five_hour', percentUsed: 23, resetsAt: at(2 * HOUR + 14 * MIN) },
+        { kind: 'seven_day', percentUsed: 41, resetsAt: at(3 * 24 * HOUR) },
+      ],
+    })
+    await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+    const narrow = (bodyColumns: number) => ({ ...BAND, surface: 'terminal' as const, props: { ...BAND.props, bodyColumns } })
+    let ui = await $.ui.mount(narrow(60))
+    expect(await lineOf(ui)).toBe('Session 23% · resets in 2h14m     Week 41%')
+    await ui.unmount()
+    ui = await $.ui.mount(narrow(40))
+    expect(await lineOf(ui)).toBe('5h 23% (2h14m) · 7d 41%')
   })
 
   test('steps aside while a survey holds the band', async ($, on) => {
     engine(on, { rateLimits: [{ kind: 'five_hour', percentUsed: 23 }] })
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal', props: { ...BAND.props, hasSurvey: true } })
-    expect(await ui.find({ type: 'Text', text: '5h 23%' })).toBeUndefined()
+    expect(await lineOf(ui)).toBe('')
     expect(await ui.find({ type: 'Text', text: 'drawn by Claude Code' })).toBeDefined()
   })
 
@@ -137,13 +181,13 @@ describe('the band', () => {
     })
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    expect(await ui.find({ type: 'Text', text: '5h 95% (2m)' })).toBeDefined()
+    expect(await lineOf(ui)).toBe('Session ▰▰▰▰▰▰▰▰▰▰ 95% · resets in 2m')
 
     await clock.advance(MIN)
-    expect(await ui.find({ type: 'Text', text: '5h 95% (1m)' })).toBeDefined()
+    expect(await lineOf(ui)).toBe('Session ▰▰▰▰▰▰▰▰▰▰ 95% · resets in 1m')
 
     await clock.advance(2 * MIN)
-    expect(await ui.find({ type: 'Text', text: '5h reset' })).toBeDefined()
+    expect(await lineOf(ui)).toBe('Session reset')
   })
 
   test('once drawn, the minute timer asks for one redraw a minute', async ($, on) => {
@@ -170,7 +214,7 @@ describe('the band', () => {
     on('ui.render', engineBand)
     await $.classic.SessionStart({ source: 'clear' })
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    expect(await ui.find({ type: 'Text', text: '7d 11%' })).toBeDefined()
+    expect(await lineOf(ui)).toBe('Week ▰▱▱▱▱▱▱▱▱▱ 11%')
   })
 })
 

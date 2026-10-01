@@ -12,7 +12,7 @@
       "name": "usage-line",
       "source": "./",
       "description": "Always-on, one-line view of your Claude plan usage above the prompt. Install and it just shows; no setup.",
-      "version": "0.2.0",
+      "version": "0.3.1",
       "author": {
         "name": "Tito",
         "url": "https://github.com/daboy-dev"

@@ -1,6 +1,6 @@
 {
   "name": "usage-line",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "Always-on, one-line view of your Claude plan usage above the prompt: 5-hour window with time to reset, weekly window, and gateway spend. Install and it just shows; no setup.",
   "author": {
     "name": "Tito",
