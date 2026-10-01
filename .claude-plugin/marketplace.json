@@ -1,7 +1,7 @@
 {
   "name": "daboy-dev",
   "owner": {
-    "name": "Tito",
+    "name": "Darío Aboy",
     "url": "https://github.com/daboy-dev"
   },
   "metadata": {
@@ -14,7 +14,7 @@
       "description": "Always-on, one-line view of your Claude plan usage above the prompt. Install and it just shows; no setup.",
       "version": "0.3.1",
       "author": {
-        "name": "Tito",
+        "name": "Darío Aboy",
         "url": "https://github.com/daboy-dev"
       },
       "homepage": "https://github.com/daboy-dev/claude-code-usage-line",
