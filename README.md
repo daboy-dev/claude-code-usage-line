@@ -53,6 +53,8 @@ A mod runs with your permissions, so here's exactly what this one does. `claude 
 
 In plain words, it reads the usage figures Claude Code already has (`$.session.usage()` and the `session.measure` event), keeps the latest in memory, and draws one line. It notes when a reply finishes, so it can tell an API-key session from one still waiting for its first reading. A one-minute timer asks for a redraw so the countdown stays current.
 
+The one classic hook, `classic.SessionStart`, runs only after `/clear`, `/resume` or `/branch`, because `session.start` doesn't fire again then. It re-reads the usage figures and redraws the line. It changes nothing: the event passes on exactly as it arrived, and the mod adds no context, instructions or settings to the session. The only hook whose result it changes is `ui.render` for the band above the prompt, where it adds its line under whatever is already drawn there.
+
 It does **not** read or write files, make network requests, start processes, read environment variables or settings, call a model, submit prompts, or touch tool calls. There's also nothing to configure and nothing stored on disk. Check it yourself:
 
 ```bash
