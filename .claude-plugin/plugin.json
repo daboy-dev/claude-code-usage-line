@@ -1,0 +1,19 @@
+{
+  "name": "usage-line",
+  "version": "0.2.0",
+  "description": "Always-on, one-line view of your Claude plan usage above the prompt: 5-hour window with time to reset, weekly window, and gateway spend. Install and it just shows; no setup.",
+  "author": {
+    "name": "Tito",
+    "url": "https://github.com/daboy-dev"
+  },
+  "homepage": "https://github.com/daboy-dev/claude-code-usage-line",
+  "repository": "https://github.com/daboy-dev/claude-code-usage-line",
+  "license": "MIT",
+  "keywords": [
+    "usage",
+    "rate-limit",
+    "status",
+    "plan",
+    "mod"
+  ]
+}

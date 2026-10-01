@@ -1,0 +1,5 @@
+{
+  "description": "usage-line mod: reads the session's usage figures and draws one line in the band above the prompt",
+  "hooks": {},
+  "modules": ["./register.ts"]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "daboy-dev",
+  "owner": {
+    "name": "Tito",
+    "url": "https://github.com/daboy-dev"
+  },
+  "metadata": {
+    "description": "Claude Code plugins by daboy-dev"
+  },
+  "plugins": [
+    {
+      "name": "usage-line",
+      "source": "./",
+      "description": "Always-on, one-line view of your Claude plan usage above the prompt. Install and it just shows; no setup.",
+      "version": "0.2.0",
+      "author": {
+        "name": "Tito",
+        "url": "https://github.com/daboy-dev"
+      },
+      "homepage": "https://github.com/daboy-dev/claude-code-usage-line",
+      "repository": "https://github.com/daboy-dev/claude-code-usage-line",
+      "license": "MIT",
+      "keywords": ["usage", "rate-limit", "status", "plan", "mod"],
+      "category": "productivity"
+    }
+  ]
+}
