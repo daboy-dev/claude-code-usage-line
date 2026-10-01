@@ -8,6 +8,9 @@
   },
   "homepage": "https://github.com/daboy-dev/claude-code-usage-line",
   "repository": "https://github.com/daboy-dev/claude-code-usage-line",
+  "documentationUrl": "https://github.com/daboy-dev/claude-code-usage-line#readme",
+  "supportUrl": "https://github.com/daboy-dev/claude-code-usage-line/issues",
+  "privacyPolicyUrl": "https://github.com/daboy-dev/claude-code-usage-line#privacy",
   "license": "MIT",
   "keywords": [
     "usage",

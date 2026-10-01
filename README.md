@@ -63,6 +63,10 @@ claude plugin validate ./usage-line
 
 The whole mod is two short files: [`hooks/register.ts`](hooks/register.ts) and [`hooks/format.ts`](hooks/format.ts).
 
+## Privacy
+
+usage-line collects nothing. It has no analytics or telemetry, makes no network requests and stores nothing on disk. The usage figures it shows come from Claude Code itself and stay in memory for the session only.
+
 ## Turn it off
 
 * **Remove it**: `claude plugin uninstall usage-line@daboy-dev`, or disable it in `/plugin` → **Installed**
